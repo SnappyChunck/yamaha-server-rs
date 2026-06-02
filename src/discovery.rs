@@ -1,7 +1,8 @@
 use mdns_sd::{ServiceDaemon, ServiceEvent};
 
 //const SERVICE_TYPE: &str = "_ypa-scp._tcp.local.";
-const SERVICE_TYPE: &str = "_wled._tcp.local.";
+//const SERVICE_TYPE: &str = "_wled._tcp.local.";
+const SERVICE_TYPE: &str = "_airplay._tcp.local."; 
 
 pub struct YamahaDevice {
     pub hostname: String,
