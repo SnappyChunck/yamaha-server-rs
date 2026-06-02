@@ -5,6 +5,7 @@ use tokio::net::{TcpStream};
 
 mod discovery;
 mod protocol;
+mod bridge;
 
 #[derive(Parser)]
 #[command(name = "yamaha-bridge")]
@@ -28,12 +29,15 @@ async fn main() {
         Some(host) => {
             let device = discovery::find(&host);
 
-            println!("Connected! {} {}", device.hostname, device.port);
+            println!("Connected to {} {}", device.hostname, device.port);
 
             let target = format!("{}:{}", device.hostname, device.port);
 
             match TcpStream::connect(&target).await {
-                Ok(_) => println!("TCP connected to {}!", target),
+                Ok(_) => {
+                    println!("TCP connected to {}", target);
+                    tokio::spawn(bridge::handle_connection());
+                },
                 Err(e) => eprintln!("TCP failed: {}", e),
             }
         }
