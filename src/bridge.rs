@@ -3,12 +3,12 @@ use tokio::net::TcpStream;
 use tokio::sync::{broadcast, mpsc, watch};
 use tokio_tungstenite::{accept_async, tungstenite::Message as WsMessage};
 
-use crate::protocol::{Config, ConfigCommand, Message as AppMessage};
+use crate::protocol::{Config, ConfigCommand, GetCommand, StateMessage, Message as AppMessage};
 
 #[derive(Clone)]
 pub struct ClientEvent {
-    sender_id: usize,
-    msg: AppMessage,
+    pub sender_id: usize,
+    pub msg: AppMessage,
 }
 
 fn parse_message(text: &str) -> Option<AppMessage> {
@@ -55,12 +55,40 @@ pub async fn handle_connection(
                                     config_tx.send_modify(|c| c.mode = *mode);
                                     let _ = sync_tx.send(ClientEvent { sender_id: client_id, msg });
                                 }
-                                _ => {
-                                    // TODO: build RCP command and forward to Yamaha
-                                    let rcp = format!("TODO: {msg:?}\n");
+                                AppMessage::Get(GetCommand::Config) => {
+                                    let current_config = config_tx.borrow().clone();
+                                    let reply = AppMessage::State(StateMessage::ConfigState {
+                                        host: current_config.host,
+                                        mode: current_config.mode,
+                                    });
+                                    let json = serde_json::to_string(&reply).unwrap();
+                                    let _ = ws_write.send(WsMessage::text(json)).await;
+                                }
+                                AppMessage::Get(GetCommand::Scan) => {
+                                    let tx = sync_tx.clone();
+                                    
+                                    tokio::task::spawn_blocking(move || {
+                                        let devices = crate::discovery::scan_for_devices(5);
+                                        let msg = AppMessage::State(StateMessage::DeviceList { devices });
+                                        
+                                        let _ = tx.send(ClientEvent { sender_id: 999, msg });
+                                    });
+                                }
+                                AppMessage::Get(get_cmd) => {
+                                    let mode = config_tx.borrow().mode;
+                                    if let Some(rcp) = crate::protocol::build_rpc_get(get_cmd, mode) {
+                                        let _ = rcp_tx.send(rcp).await;
+                                    }
+                                }
+                                AppMessage::Command(cmd) => {
+                                    let mode = config_tx.borrow().mode;
+                                    let rcp = crate::protocol::build_rpc_command(cmd, mode);
                                     let _ = rcp_tx.send(rcp).await;
-                                    // sync fader state to all other clients
-                                   let _ = sync_tx.send(ClientEvent { sender_id: client_id, msg });
+
+                                    let _ = sync_tx.send(ClientEvent { sender_id: client_id, msg: msg.clone() });
+                                }
+                                _ => {
+                                    println!("Unsupported type");
                                 }
                             }
                         }
