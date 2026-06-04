@@ -71,7 +71,7 @@ pub async fn handle_connection(
                                         let devices = crate::discovery::scan_for_devices(5);
                                         let msg = AppMessage::State(StateMessage::DeviceList { devices });
                                         
-                                        let _ = tx.send(ClientEvent { sender_id: 999, msg });
+                                        let _ = tx.send(ClientEvent { sender_id: usize::MAX, msg });
                                     });
                                 }
                                 AppMessage::Get(get_cmd) => {
