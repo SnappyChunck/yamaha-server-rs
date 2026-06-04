@@ -1,4 +1,6 @@
 # yamaha-server-rs
 TODO:
-    make client able to set deviceMode
-    make client able to set mdns.hostname/ip
+    [x] make client able to set deviceMode
+    [x] make client able to set mdns.hostname/ip
+    [-]] add all possible set commands
+    [-] add all possible get commands
