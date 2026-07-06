@@ -1,26 +1,46 @@
 use mdns_sd::{ServiceDaemon, ServiceEvent};
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
-//const SERVICE_TYPE: &str = "_ypa-scp._tcp.local.";
+const SERVICE_TYPE: &str = "_ypa-scp._tcp.local.";
 //const SERVICE_TYPE: &str = "_wled._tcp.local.";
-const SERVICE_TYPE: &str = "_airplay._tcp.local."; 
+//const SERVICE_TYPE: &str = "_airplay._tcp.local."; 
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DiscoveredDevice {
+    pub hostname: String,
+    pub port: u16,
+}
 
 pub struct YamahaDevice {
     pub hostname: String,
     pub port: u16,
 }
 
-pub fn scan_and_print() {
+pub fn scan_for_devices(timeout_secs: u64) -> Vec<DiscoveredDevice> {
     let mdns = ServiceDaemon::new().expect("Failed to create daemon");
     let receiver = mdns.browse(SERVICE_TYPE).expect("Failed to browse");
+    
+    let mut devices: Vec<DiscoveredDevice> = Vec::new();
+    let start = std::time::Instant::now();
 
-    println!("No --yamaha-host given. Scanning for Yamaha SCP devices (Ctrl+C to exit):\n");
-
-    while let Ok(event) = receiver.recv() {
-        if let ServiceEvent::ServiceResolved(info) = event {
-            let hostname = info.get_hostname();
-            println!("{} {}", hostname, info.get_port());
+    while start.elapsed() < Duration::from_secs(timeout_secs) {
+        if let Ok(event) = receiver.recv_timeout(Duration::from_millis(500))
+            && let ServiceEvent::ServiceResolved(info) = event 
+        {
+            let hostname = info.get_hostname().trim_end_matches('.').to_string();
+            
+            if !devices.iter().any(|d| d.hostname == hostname) {
+                devices.push(DiscoveredDevice {
+                    hostname,
+                    port: info.get_port(),
+                });
+            }
         }
     }
+    
+    let _ = mdns.shutdown();
+    devices
 }
 
 pub fn find(hostname: &str) -> YamahaDevice {
