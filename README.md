@@ -1,7 +1,7 @@
 # Yamaha Server
 
 This project consists of two separate projects: this server and a UI.
-The currently supported UI is developed by YONN2222 and can be found here: UI.
+The currently supported UI is developed by [YONN2222](https://github.com/YONN2222) and can be found here: [UI](https://github.com/Wi-R-Technik-Team/yamaha-fader-web).
 
 What does this project do?
 
@@ -35,7 +35,7 @@ You can either build the project as described above or run it directly using Car
 ~~~
 cargo run -- --address 0.0.0.0:8081
 ~~~
->The --address argument defines the address and port on which the server’s WebSocket can be reached. UI clients, such as the Yamaha Fader Web UI, can then connect to the server.
+>The --address argument defines the address and port on which the server’s WebSocket can be reached. UI clients, such as the [Yamaha Fader Web UI](https://github.com/Wi-R-Technik-Team/yamaha-fader-web), can then connect to the server.
 
 Instructions for installing and running the UI can be found in the UI project’s repository.
 
